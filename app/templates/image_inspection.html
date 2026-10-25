@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+
+{% block title %}圖片上傳比對{% endblock %}
+
+{% block content %}
+<section class="glass-panel panel-block image-inspection-page">
+  <p class="eyebrow">IMAGE INSPECTION</p>
+  <h1>圖片上傳比對</h1>
+  <p class="helper-text">上傳 JPG、JPEG 或 PNG 圖片，使用 YOLOv8 偵測刮痕、凹痕與髒污。</p>
+  <form method="post" enctype="multipart/form-data" class="upload-form">
+    <label for="inspection-image">選擇圖片
+      <input id="inspection-image" name="image" type="file" accept="image/jpeg,image/png" required>
+    </label>
+    <button class="primary-button" type="submit">上傳並比對</button>
+  </form>
+  {% if error %}<p class="camera-message camera-message-error" role="alert">{{ error }}</p>{% endif %}
+  {% if result %}
+    <section class="inspection-result" aria-live="polite">
+      <div class="result-heading"><h2>比對結果</h2><span class="result-badge result-{{ result.status }}">{{ result.status_label }}</span></div>
+      {% if result.image %}<img class="result-image" src="{{ result.image }}" alt="圖片比對結果">{% endif %}
+      <dl class="result-details"><dt>比對時間</dt><dd>{{ result.comparison_time }}</dd><dt>問題說明</dt><dd>{{ result.problem_description }}</dd></dl>
+      <form method="post" action="{{ url_for('web.record_uploaded_inspection') }}" class="camera-controls">
+        <input type="hidden" name="status" value="{{ result.status }}">
+        <input type="hidden" name="status_label" value="{{ result.status_label }}">
+        <input type="hidden" name="comparison_time" value="{{ result.comparison_time }}">
+        <input type="hidden" name="problem_description" value="{{ result.problem_description }}">
+        <input type="hidden" name="detections" value="{{ result.detections | tojson | forceescape }}">
+        <input type="hidden" name="image" value="{{ result.image or '' }}">
+        <button class="primary-button" type="submit">紀錄此結果</button>
+      </form>
+    </section>
+  {% endif %}
+</section>
+{% endblock %}

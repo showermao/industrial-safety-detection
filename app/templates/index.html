@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<section class="hero glass-panel">
+  <div>
+    <p class="eyebrow">Dashboard</p>
+    <h1>實驗室狀態總覽</h1>
+  </div>
+  {% if user %}
+    <div class="user-pill">登入者：{{ user.username }}</div>
+  {% endif %}
+</section>
+
+<section class="stats-grid">
+  {% for area in dashboard %}
+    <article class="glass-panel status-card status-{{ area.status }}">
+      <div class="status-header">
+        <span>{{ area.name }}</span>
+        <span class="status-badge status-{{ area.status }}">{{ area.status }}</span>
+      </div>
+      <p>{{ area.summary }}</p>
+    </article>
+  {% endfor %}
+</section>
+
+<section class="content-grid">
+  <div class="glass-panel panel-block">
+    <h2>最新工安警示</h2>
+    {% if recent_alerts %}
+      <ul class="list-block">
+        {% for alert in recent_alerts %}
+          <li>
+            <strong>{{ alert.area_name }}</strong>
+            <span>{{ alert.event_type }}</span>
+            <span class="severity severity-{{ alert.severity }}">{{ alert.severity }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>目前沒有收到新的工安警示。</p>
+    {% endif %}
+  </div>
+
+  <div class="glass-panel panel-block">
+    <h2>近期稽核紀錄</h2>
+    {% if recent_audits %}
+      <ul class="list-block">
+        {% for record in recent_audits %}
+          <li>
+            <strong>{{ record.action }}</strong>
+            <span>{{ record.details }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>目前尚未產生稽核紀錄。</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

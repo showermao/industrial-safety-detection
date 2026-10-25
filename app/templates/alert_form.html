@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}新增警示 | 台南大學實驗室監控系統{% endblock %}
+
+{% block content %}
+<section class="auth-card glass-panel">
+  <h1>新增工安警示</h1>
+  <form method="post">
+    <label>
+      區域名稱
+      <input type="text" name="area_name" required>
+    </label>
+    <label>
+      事件類型
+      <input type="text" name="event_type" required>
+    </label>
+    <label>
+      嚴重程度
+      <select name="severity">
+        <option value="normal">normal</option>
+        <option value="attention">attention</option>
+        <option value="warning" selected>warning</option>
+      </select>
+    </label>
+    <label>
+      備註
+      <textarea name="notes" rows="4"></textarea>
+    </label>
+    <button type="submit">建立警示</button>
+  </form>
+</section>
+{% endblock %}

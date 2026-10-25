@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}即時影像檢測{% endblock %}
+
+{% block content %}
+<section class="glass-panel panel-block">
+  <div id="camera-monitor" data-csrf-token="{{ csrf_token }}" aria-label="即時影像檢測"></div>
+</section>
+<script type="module" src="{{ url_for('static', filename='dist/camera-monitor.js', v='20261023-3') }}"></script>
+<script>
+window.setTimeout(function () {
+  const root = document.getElementById('camera-monitor');
+  if (!root || root.querySelector('.camera-monitor')) return;
+  const token = root.dataset.csrfToken;
+  const viewerId = 'viewer-' + (window.crypto && window.crypto.randomUUID ? window.crypto.randomUUID() : Date.now());
+  root.innerHTML = `
+    <div class="camera-monitor">
+      <div class="camera-toolbar"><div><p class="eyebrow">CAMERA STREAM</p><h2 class="camera-title">即時影像檢測</h2></div><span class="camera-status camera-status-idle">待機</span></div>
+      <div class="camera-frame" id="camera-fallback-frame"><div class="camera-placeholder"><strong>相容模式</strong><span>可直接使用下方控制項</span></div></div>
+      <div class="camera-controls"><button class="primary-button" id="camera-fallback-start" type="button">啟動即時影像</button><button class="secondary-button" id="camera-fallback-stop" type="button" disabled>停止</button><button class="secondary-button" id="camera-fallback-force-stop" type="button">強制停止</button></div>
+      <div class="capture-settings" aria-label="擷取設定"><label>擷取模式<select id="camera-fallback-mode"><option value="manual">手動擷取</option><option value="auto">自動擷取</option></select></label><label>自動擷取間隔（秒）<input id="camera-fallback-seconds" type="number" min="1" max="3600" value="10" disabled></label><button class="primary-button" id="camera-fallback-capture" type="button" disabled>擷取並比對</button></div>
+      <section class="inspection-result" id="camera-fallback-result" hidden><div class="result-heading"><h3>比對結果</h3><span class="result-badge" id="camera-fallback-status"></span></div><img class="result-image" id="camera-fallback-result-image" alt="YOLOv8 比對結果"><dl class="result-details"><dt>比對時間</dt><dd id="camera-fallback-time"></dd><dt>問題說明</dt><dd id="camera-fallback-description"></dd></dl><div class="camera-controls"><button class="primary-button" id="camera-fallback-record" type="button">紀錄</button><button class="secondary-button" id="camera-fallback-discard" type="button">放棄，下一張</button></div></section>
+      <p class="camera-message" id="camera-fallback-message">相容模式已啟用</p>
+    </div>`;
+  const frame = document.getElementById('camera-fallback-frame');
+  const message = document.getElementById('camera-fallback-message');
+  const start = document.getElementById('camera-fallback-start');
+  const stop = document.getElementById('camera-fallback-stop');
+  const forceStop = document.getElementById('camera-fallback-force-stop');
+  const capture = document.getElementById('camera-fallback-capture');
+  const mode = document.getElementById('camera-fallback-mode');
+  const seconds = document.getElementById('camera-fallback-seconds');
+  let timer = null;
+  const headers = { 'Content-Type': 'application/json', 'X-CSRF-Token': token };
+  async function inspect(save) {
+    try {
+      const response = await fetch('/api/v1/video/capture', { method: 'POST', headers, body: JSON.stringify({ viewer_id: viewerId, save: !!save }) });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.message || '擷取失敗');
+      const data = payload.data;
+      window.cameraFallbackResult = data;
+      document.getElementById('camera-fallback-result').hidden = false;
+      const badge = document.getElementById('camera-fallback-status');
+      badge.textContent = data.status_label || data.status;
+      badge.className = 'result-badge result-' + data.status;
+      document.getElementById('camera-fallback-result-image').src = data.image || '';
+      document.getElementById('camera-fallback-time').textContent = data.comparison_time;
+      document.getElementById('camera-fallback-description').textContent = data.problem_description;
+      document.getElementById('camera-fallback-record').disabled = !!save;
+    } catch (error) { message.textContent = error.message; }
+  }
+  function resetTimer() { if (timer) { clearInterval(timer); timer = null; } if (mode.value === 'auto') timer = setInterval(function () { inspect(true); }, Math.max(1, Number(seconds.value)) * 1000); }
+  mode.onchange = function () { seconds.disabled = mode.value !== 'auto'; resetTimer(); };
+  seconds.oninput = resetTimer;
+  capture.onclick = function () { inspect(false); };
+  document.getElementById('camera-fallback-record').onclick = async function () {
+    const response = await fetch('/api/v1/video/records', { method: 'POST', headers, body: JSON.stringify({ viewer_id: viewerId, result: window.cameraFallbackResult }) });
+    if (response.ok) { this.disabled = true; message.textContent = '檢測結果已紀錄'; }
+  };
+  document.getElementById('camera-fallback-discard').onclick = function () {
+    document.getElementById('camera-fallback-result').hidden = true; window.cameraFallbackResult = null; message.textContent = '已放棄，等待下一張';
+  };
+  start.onclick = async function () {
+    start.disabled = true; message.textContent = '正在啟動相機…';
+    try {
+      const response = await fetch('/api/v1/video/start', { method: 'POST', headers, body: JSON.stringify({ viewer_id: viewerId }) });
+      if (!response.ok) { const data = await response.json(); throw new Error(data.message || '相機啟動失敗'); }
+      const image = document.createElement('img'); image.alt = '即時相機影像'; image.src = '/api/v1/video/stream?viewer_id=' + encodeURIComponent(viewerId) + '&t=' + Date.now();
+      image.onerror = function () { message.textContent = '串流影像載入失敗'; }; frame.replaceChildren(image);
+      stop.disabled = false; capture.disabled = false; message.textContent = '即時影像已啟動'; resetTimer();
+    } catch (error) { message.textContent = error.message; start.disabled = false; }
+  };
+  stop.onclick = async function () {
+    if (timer) clearInterval(timer); await fetch('/api/v1/video/stop', { method: 'POST', headers, body: JSON.stringify({ viewer_id: viewerId }) });
+    frame.innerHTML = '<div class="camera-placeholder"><strong>已停止</strong><span>按啟動按鈕重新連線</span></div>'; start.disabled = false; stop.disabled = true; capture.disabled = true; message.textContent = '即時影像已停止';
+  };
+  forceStop.onclick = async function () {
+    if (timer) clearInterval(timer);
+    const response = await fetch('/api/v1/video/force-stop', { method: 'POST', headers, body: '{}' });
+    if (!response.ok) { message.textContent = '強制停止失敗'; return; }
+    frame.innerHTML = '<div class="camera-placeholder"><strong>已強制停止</strong><span>現在可以重新啟動相機</span></div>';
+    start.disabled = false; stop.disabled = true; capture.disabled = true; message.textContent = '已強制停止遺留的相機連線';
+  };
+}, 800);
+</script>
+{% endblock %}

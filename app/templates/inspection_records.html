@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}檢測紀錄{% endblock %}
+
+{% block content %}
+<section class="glass-panel panel-block">
+  <div class="records-header">
+    <div><p class="eyebrow">INSPECTION HISTORY</p><h1>檢測紀錄</h1></div>
+    <span class="record-count">共 {{ records|length }} 筆</span>
+  </div>
+  {% if records %}
+    <div class="inspection-record-grid">
+      {% for record in records %}
+        <article class="inspection-record-card">
+          {% if record.image_data %}<img src="{{ record.image_data }}" alt="第 {{ record.id }} 筆檢測結果" loading="lazy">{% endif %}
+          <div class="record-card-body">
+            <div class="result-heading"><strong>#{{ record.id }}</strong><span class="result-badge result-{{ record.status }}">{{ record.status_label or record.status }}</span></div>
+            <dl class="result-details">
+              <dt>比對時間</dt><dd>{{ record.comparison_time }}</dd>
+              <dt>來源</dt><dd>{% if record.source == 'auto' %}自動擷取{% elif record.source == 'upload' %}上傳圖片{% else %}手動擷取{% endif %}</dd>
+              <dt>問題說明</dt><dd>{{ record.problem_description }}</dd>
+              <dt>建立時間</dt><dd>{{ record.created_at }}</dd>
+            </dl>
+          </div>
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="empty-state">目前沒有檢測紀錄。請先到即時影像頁面進行擷取。</p>
+  {% endif %}
+</section>
+{% endblock %}

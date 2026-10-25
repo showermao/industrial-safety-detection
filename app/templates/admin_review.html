@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}會員審核 | 台南大學實驗室監控系統{% endblock %}
+
+{% block content %}
+<section class="glass-panel panel-block">
+  <h1>會員審核</h1>
+  {% if pending_users %}
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>使用者名稱</th>
+          <th>電子郵件</th>
+          <th>角色</th>
+          <th>動作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in pending_users %}
+          <tr>
+            <td>{{ user.username }}</td>
+            <td>{{ user.email }}</td>
+            <td>{{ user.role }}</td>
+            <td>
+              <form method="post" class="inline-form">
+                <input type="hidden" name="user_id" value="{{ user.id }}">
+                <button type="submit" name="action" value="approve">核准</button>
+                <button type="submit" name="action" value="reject" class="secondary-button">拒絕</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>目前沒有待審核使用者。</p>
+  {% endif %}
+</section>
+{% endblock %}

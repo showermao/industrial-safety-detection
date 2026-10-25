@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}台南大學實驗室監控系統{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="topbar glass-panel">
+        <div class="brand-block">
+          <div class="brand-mark">NTU</div>
+          <div>
+            <div class="brand-name">台南大學實驗室監控系統</div>
+            <div class="brand-subtitle">工安影像監測與稽核入口</div>
+          </div>
+        </div>
+        <nav class="nav-links">
+          <a href="{{ url_for('web.index') }}">首頁</a>
+          <a href="{{ url_for('web.audit_log') }}">稽核紀錄</a>
+          {% if session.get('user_id') %}
+            <a href="{{ url_for('web.inspection_records') }}">檢測紀錄</a>
+            <a href="{{ url_for('web.image_inspection') }}">圖片比對</a>
+          {% endif %}
+          {% if session.get('user_id') %}
+            <a href="{{ url_for('web.camera_monitor') }}">即時影像</a>
+            <a href="{{ url_for('web.create_alert') }}">新增警示</a>
+            {% if session.get('user_id') and user and user.role == 'admin' %}
+              <a href="{{ url_for('web.admin_review') }}">會員審核</a>
+            {% endif %}
+            <a href="{{ url_for('web.logout') }}">登出</a>
+          {% else %}
+            <a href="{{ url_for('web.login') }}">登入</a>
+            <a href="{{ url_for('web.register') }}">註冊</a>
+          {% endif %}
+        </nav>
+      </header>
+
+      <main class="main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="flash-stack">
+              {% for category, message in messages %}
+                <div class="flash flash-{{ category }}">{{ message }}</div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </body>
+</html>

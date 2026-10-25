@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}登入 | 台南大學實驗室監控系統{% endblock %}
+
+{% block content %}
+<section class="auth-card glass-panel">
+  <h1>登入系統</h1>
+  <form method="post">
+    <label>
+      使用者名稱
+      <input type="text" name="username" required>
+    </label>
+    <label>
+      密碼
+      <input type="password" name="password" required>
+    </label>
+    <button type="submit">登入</button>
+  </form>
+  <p class="helper-text">還沒有帳號？<a href="{{ url_for('web.register') }}">前往註冊</a></p>
+</section>
+{% endblock %}
